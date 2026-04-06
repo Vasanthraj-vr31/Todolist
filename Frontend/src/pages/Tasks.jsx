@@ -16,8 +16,9 @@ const Tasks = () => {
   };
 
   const filteredTasks = tasks.filter(task => {
-    if (filter === 'pending') return !task.completed;
-    if (filter === 'completed') return task.completed;
+    const isCompleted = task.status === 'completed' || task.completed === true;
+    if (filter === 'pending') return !isCompleted;
+    if (filter === 'completed') return isCompleted;
     return true; // 'all'
   });
 
@@ -78,7 +79,7 @@ const Tasks = () => {
              </div>
           ) : (
             filteredTasks.map(task => (
-              <TaskCard key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} />
+              <TaskCard key={task._id || task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} />
             ))
           )}
         </div>

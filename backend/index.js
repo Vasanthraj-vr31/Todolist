@@ -6,6 +6,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const statusRoutes = require('./routes/statusRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api', authRoutes);
 app.use('/api', userRoutes);
 app.use('/api', statusRoutes);
+app.use('/api', taskRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/todolist_auth';

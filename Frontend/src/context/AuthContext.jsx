@@ -25,9 +25,11 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       localStorage.setItem('token', token);
       fetchUser();
+      fetchTasks();
     } else {
       localStorage.removeItem('token');
       setUser(null);
+      setTasks([]);
       setLoading(false);
     }
   }, [token]);
@@ -38,10 +40,18 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data.user);
     } catch (err) {
       console.error('Error fetching user', err);
-      // Optional: Handle token expiration logic here
-      setToken(null);
+      if (err.response?.status === 401) setToken(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const res = await api.get('/tasks');
+      setTasks(res.data.tasks);
+    } catch (err) {
+      console.error('Error fetching tasks', err);
     }
   };
 
@@ -67,31 +77,57 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
-  // Local Task State (as Backend doesn't have Todo models yet)
-  const [tasks, setTasks] = useState([
-    { id: '1', title: 'Review PR for authentications', tag: 'Engineering', completed: false },
-    { id: '2', title: 'Design system updates', tag: 'Design', completed: false },
-    { id: '3', title: 'Weekly sync with marketing', tag: 'Meeting', completed: true },
-  ]);
+  // Local Task State updated via API interactions
+  const [tasks, setTasks] = useState([]);
 
-  const addTask = (title) => {
-    const newTask = {
-      id: Date.now().toString(),
-      title,
-      tag: user?.Department || 'General',
-      completed: false
-    };
-    setTasks([newTask, ...tasks]);
+  const addTask = async (title) => {
+    try {
+      const tag = user?.Department || 'General';
+      const res = await api.post('/tasks', { title, tag });
+      // Add securely to local state ensuring we grab the Mongo _id mapping mapped to `id` normally if required, but tasks uses standard `_id` so we map it.
+      setTasks([res.data.task, ...tasks]);
+    } catch (err) {
+      console.error("Failed to add task", err);
+    }
   };
 
-  const toggleTask = (id) => {
+  const toggleTask = async (id) => {
+    // Optimistic UI toggle
+    const taskToToggle = tasks.find(t => t._id === id || t.id === id);
+    if (!taskToToggle) return;
+    
+    const newStatus = taskToToggle.status === 'completed' ? 'pending' : 'completed';
+    
+    // Update local state instantly
     setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
+      (task._id === id || task.id === id) ? { ...task, status: newStatus, completed: newStatus === 'completed' } : task
     ));
+
+    try {
+      await api.put(`/tasks/${taskToToggle._id || taskToToggle.id}`, { status: newStatus });
+    } catch (err) {
+      console.error("Failed to toggle task", err);
+      // Revert upon failure
+      setTasks(tasks.map(task => 
+        (task._id === id || task.id === id) ? { ...task, status: taskToToggle.status, completed: taskToToggle.status === 'completed' } : task
+      ));
+    }
   };
 
-  const deleteTask = (id) => {
-    setTasks(tasks.filter(task => task.id !== id));
+  const deleteTask = async (id) => {
+    // Extract ID (handling our schema differences briefly just in case)
+    const exactId = id;
+    
+    // Optimistic delete
+    setTasks(tasks.filter(task => task._id !== exactId && task.id !== exactId));
+    
+    try {
+      await api.delete(`/tasks/${exactId}`);
+    } catch (err) {
+      console.error("Failed to delete task", err);
+      // Need to re-trigger a fetch ideally if optimistic delete failed
+      fetchTasks();
+    }
   };
 
   return (
