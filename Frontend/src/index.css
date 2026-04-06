@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#fcfcfc] text-neutral-900 antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  /* Common UI Elements for Neutral Theme */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-[10px] border border-neutral-200 bg-white focus:bg-white focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all outline-none text-sm text-neutral-900 placeholder-neutral-400 shadow-sm;
+  }
+  
+  .btn-primary {
+    @apply w-full flex justify-center items-center py-3 px-4 rounded-[10px] text-sm font-semibold text-white bg-neutral-900 hover:bg-neutral-800 focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-neutral-900 transition-all shadow-[0_2px_10px_rgba(0,0,0,0.08)] active:scale-[0.98];
+  }
+}
